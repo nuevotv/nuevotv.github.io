@@ -4,62 +4,87 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>NuevoTV – Ajout à distance</title>
+<title>NuevoTV</title>
 <style>
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#121040,#02020a 70%);color:#fff;min-height:100vh}
-  main{max-width:520px;margin:0 auto;padding:28px 18px 60px}
+  main{max-width:520px;margin:0 auto;padding:26px 18px 60px}
   h1{font-size:30px;margin:0 0 4px;background:linear-gradient(90deg,#6ef0ff,#fff,#ff5cc8);-webkit-background-clip:text;background-clip:text;color:transparent}
-  p{color:#c3c2e6;line-height:1.5}
-  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px}
-  .tabs button{flex:1 1 30%;margin:0;padding:11px 6px;border-radius:12px;background:#ffffff14;color:#fff;font-weight:600;font-size:14px}
+  h2{font-size:18px;margin:0 0 6px}
+  p{color:#c3c2e6;line-height:1.5;margin:6px 0}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 6px}
+  .tabs button{flex:1 1 22%;margin:0;padding:11px 4px;border-radius:12px;background:#ffffff14;color:#fff;font-weight:600;font-size:14px}
   .tabs button.on{background:#fff;color:#0a0826}
   label{display:block;font-size:13px;color:#c3c2e6;margin:14px 0 6px}
   input{width:100%;padding:14px;border-radius:12px;border:1px solid #ffffff26;background:#0f0f2e;color:#fff;font-size:16px}
   input.code{font-size:26px;letter-spacing:4px;text-transform:uppercase;text-align:center;font-weight:700}
-  button{margin-top:22px;width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#7c6cff,#ff5cc8);color:#fff;font-size:17px;font-weight:700}
-  .card{background:#ffffff0d;border:1px solid #ffffff1a;border-radius:16px;padding:16px;margin-top:18px}
+  button{margin-top:18px;width:100%;padding:15px;border:0;border-radius:14px;background:linear-gradient(90deg,#7c6cff,#ff5cc8);color:#fff;font-size:17px;font-weight:700}
+  button.sec{background:#ffffff1a}
+  button.del{background:#ffffff1a;color:#ff8a9a}
+  .card{background:#ffffff0d;border:1px solid #ffffff1a;border-radius:16px;padding:16px;margin-top:16px}
   .f{display:none}.f.on{display:block}
-  .msg{margin-top:18px;padding:14px;border-radius:12px;display:none}
-  .ok{display:block;background:#1d4d3a}.err{display:block;background:#5a1d2b}
+  .msg{margin-top:14px;padding:12px 14px;border-radius:12px;display:none}
+  .ok{display:block;background:#1d4d3a}.err{display:block;background:#5a1d2b}.wait{display:block;background:#ffffff14}
+  .pl{display:block;width:100%;text-align:left;margin-top:8px;padding:12px;border-radius:12px;background:#ffffff10;font-weight:400;font-size:15px;word-break:break-all}
+  .pl b{font-size:16px}
   small{color:#8a88b5}
+  .hidden{display:none}
 </style>
 </head>
 <body>
 <main>
   <h1>NuevoTV</h1>
-  <p data-t="intro">Envoie une playlist, tes clés API ou un fichier de sauvegarde vers une TV, où qu'elle soit. Le code s'affiche sur la TV dans Réglages → Ajouter de n'importe où.</p>
+  <p data-t="intro">Gère une TV où qu'elle soit : ses playlists, l'ajout d'une playlist, les clés API et la sauvegarde. Le code s'affiche sur la TV dans Réglages → Ajouter depuis le téléphone.</p>
 
   <div class="card">
     <label data-t="code">Code de la TV</label>
     <input id="code" class="code" placeholder="ABCD-EFGH" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <div id="connMsg" class="msg"></div>
   </div>
 
-  <div class="tabs" id="tabs">
-    <button data-k="xtream" class="on">Xtream</button>
-    <button data-k="m3u">M3U</button>
-    <button data-k="stalker">Stalker</button>
-    <button data-k="keys" data-t="keysTab">Clés API</button>
-    <button data-k="backup" data-t="backupTab">Sauvegarde</button>
+  <div id="tvPart" class="hidden">
+    <div class="card">
+      <h2><span data-t="tvPlaylists">Playlists de la TV</span> <small id="device"></small></h2>
+      <div id="list"></div>
+      <button class="sec" id="refresh" data-t="refresh">Actualiser la liste</button>
+    </div>
+
+    <div class="card hidden" id="editCard">
+      <h2 id="editTitle"></h2>
+      <label data-t="name">Nom</label><input id="e_name">
+      <label id="e_urlLabel"></label><input id="e_url" type="url" autocapitalize="none">
+      <div id="e_userBox"><label id="e_userLabel"></label><input id="e_user" autocapitalize="none" autocorrect="off"></div>
+      <div id="e_passBox"><label data-t="pass">Mot de passe</label><input id="e_pass" type="password" data-tp="keepPass" placeholder="Laisser vide pour garder l'actuel"></div>
+      <label><span data-t="epg">URL EPG / XMLTV en plus</span> <small data-t="optional">(facultatif)</small></label><input id="e_epg" type="url" autocapitalize="none">
+      <label><span>User agent</span> <small data-t="uaHint">(facultatif – si le fournisseur refuse la connexion)</small></label><input id="e_ua" autocapitalize="none" autocorrect="off">
+      <button id="saveEdit" data-t="save">Enregistrer et recharger sur la TV</button>
+      <button class="del" id="delete" data-t="delete">Supprimer de la TV</button>
+      <button class="sec" id="cancelEdit" data-t="cancel">Annuler</button>
+      <div id="editMsg" class="msg"></div>
+    </div>
   </div>
 
   <div class="card">
-    <div class="f on" data-f="xtream m3u stalker">
-      <label data-t="name">Nom</label><input id="name" placeholder="Ma TV">
+    <h2 data-t="add">Ajouter</h2>
+    <div class="tabs" id="tabs">
+      <button data-k="xtream" class="on">Xtream</button>
+      <button data-k="stalker">Stalker</button>
+      <button data-k="keys" data-t="keysTab">Clés API</button>
+      <button data-k="backup" data-t="backupTab">Sauvegarde</button>
+    </div>
+    <div class="f on" data-f="xtream stalker">
+      <label data-t="name">Nom</label><input id="name" data-tp="myTv" placeholder="Ma TV">
     </div>
     <div class="f on" data-f="xtream">
       <label data-t="server">Adresse du serveur</label><input id="url_x" type="url" placeholder="http://fournisseur.exemple:8080" autocapitalize="none">
       <label data-t="user">Nom d'utilisateur</label><input id="user" autocapitalize="none" autocorrect="off">
       <label data-t="pass">Mot de passe</label><input id="pass" type="password">
     </div>
-    <div class="f" data-f="m3u">
-      <label data-t="m3u">URL de la playlist (M3U)</label><input id="url_m" type="url" placeholder="http://.../get.php?...type=m3u_plus" autocapitalize="none">
-    </div>
     <div class="f" data-f="stalker">
       <label data-t="portal">Adresse du portail</label><input id="url_s" type="url" placeholder="http://portail.exemple:8080/c/" autocapitalize="none">
       <label data-t="mac">Adresse MAC</label><input id="mac" placeholder="00:1A:79:12:34:56" autocapitalize="characters" autocorrect="off">
     </div>
-    <div class="f on" data-f="xtream m3u stalker">
+    <div class="f on" data-f="xtream stalker">
       <label><span data-t="epg">URL EPG / XMLTV en plus</span> <small data-t="optional">(facultatif)</small></label><input id="epg" type="url" autocapitalize="none">
     </div>
     <div class="f" data-f="keys">
@@ -67,93 +92,222 @@
       <label data-t="subdl">Clé API SubDL</label><input id="subdl" autocapitalize="none" autocorrect="off">
     </div>
     <div class="f" data-f="backup">
-      <label data-t="file">Fichier de sauvegarde (.json)</label><input id="file" type="file" accept=".json,application/json">
+      <button class="sec" id="getBackup" data-t="getBackup">Télécharger la sauvegarde de la TV</button>
+      <label data-t="file">Restaurer un fichier de sauvegarde (.json)</label><input id="file" type="file" accept=".json,application/json">
     </div>
     <button id="send" data-t="send">Envoyer à la TV</button>
     <div id="msg" class="msg"></div>
   </div>
 
-  <p><small data-t="privacy">Tout est chiffré sur ton téléphone avec le code de la TV avant d'être envoyé : le relais (ntfy.sh) ne voit jamais tes identifiants. La TV le reçoit dans les secondes qui suivent si NuevoTV est ouverte, sinon au prochain démarrage (dans les 12 heures).</small></p>
+  <p><small data-t="privacy">Tout est chiffré sur ton téléphone avec le code de la TV : le relais (ntfy.sh) ne voit jamais tes identifiants, et les mots de passe ne quittent jamais la TV. NuevoTV doit être ouverte sur la TV pour répondre.</small></p>
 </main>
 <script>
 const EN = {
-  intro:"Send a playlist, your API keys or a settings file to a TV, wherever it is. The code is on the TV in Settings → Add from anywhere.",
-  code:"TV code", keysTab:"API keys", backupTab:"Backup", name:"Name", server:"Server address", user:"Username", pass:"Password",
-  m3u:"Playlist URL (M3U)", portal:"Portal address", mac:"MAC address", epg:"Extra EPG / XMLTV URL", optional:"(optional)",
-  tmdb:"TMDB API key", subdl:"SubDL API key", file:"Settings file (.json)", send:"Send to TV",
-  privacy:"Everything is encrypted on your phone with the TV's code before it's sent: the relay (ntfy.sh) never sees your logins. The TV gets it within seconds if NuevoTV is open, otherwise next time it starts (within 12 hours).",
+  intro:"Manage a TV wherever it is: its playlists, adding a playlist, API keys and backups. The code is on the TV in Settings → Add from phone.",
+  code:"TV code", tvPlaylists:"The TV's playlists", refresh:"Refresh the list", name:"Name", pass:"Password", keepPass:"Leave empty to keep the current one",
+  epg:"Extra EPG / XMLTV URL", optional:"(optional)", uaHint:"(optional – if the provider refuses the connection)",
+  save:"Save and reload on the TV", delete:"Delete from the TV", cancel:"Cancel", add:"Add", keysTab:"API keys", backupTab:"Backup",
+  myTv:"My TV", server:"Server address", user:"Username", portal:"Portal address", mac:"MAC address", tmdb:"TMDB API key", subdl:"SubDL API key",
+  getBackup:"Download the TV's backup", file:"Restore a settings file (.json)", send:"Send to TV",
+  privacy:"Everything is encrypted on your phone with the TV's code: the relay (ntfy.sh) never sees your logins, and passwords never leave the TV. NuevoTV must be open on the TV to answer.",
   badCode:"Type the 8-character code shown on the TV.", missing:"Fill in the address (or a key, or choose a file).",
-  sending:"Sending…", sent:"Sent ✓ The TV will show a message when it arrives.", failed:"Sending failed – check the connection and try again."
+  sending:"Sending…", sent:"Sent ✓ The TV shows a message when it arrives.", failed:"Sending failed – check the connection and try again.",
+  connecting:"Connecting to the TV… (NuevoTV must be open on it)", noAnswer:"The TV doesn't answer. Open NuevoTV on it and check the code.",
+  lastKnown:"Last list received from the TV – asking it for an update…", connected:"Connected ✓", empty:"No playlist on this TV yet.",
+  saved:"Sent ✓ The TV is saving it and reloading the playlist.", confirmDelete:"Delete this playlist from the TV?", deleted:"Deleted ✓",
+  waitBackup:"Asking the TV for its backup…", gotBackup:"Backup downloaded ✓ Keep it safe: it contains the logins.",
+  off:"off", films:"films", seriesW:"series", channelsW:"channels", portalW:"Portal address", macW:"MAC address", serverW:"Server address", userW:"Username", m3uW:"Playlist URL (M3U)"
 };
 const FR = {
   badCode:"Tape le code de 8 caractères affiché sur la TV.", missing:"Remplis l'adresse (ou une clé, ou choisis un fichier).",
-  sending:"Envoi…", sent:"Envoyé ✓ La TV affichera un message à la réception.", failed:"Échec de l'envoi – vérifie la connexion et réessaie."
+  sending:"Envoi…", sent:"Envoyé ✓ La TV affiche un message à la réception.", failed:"Échec de l'envoi – vérifie la connexion et réessaie.",
+  connecting:"Connexion à la TV… (NuevoTV doit y être ouverte)", noAnswer:"La TV ne répond pas. Ouvre NuevoTV dessus et vérifie le code.",
+  lastKnown:"Dernière liste reçue de la TV – demande de mise à jour…", connected:"Connecté ✓", empty:"Aucune playlist sur cette TV pour l'instant.",
+  saved:"Envoyé ✓ La TV enregistre et recharge la playlist.", confirmDelete:"Supprimer cette playlist de la TV ?", deleted:"Supprimée ✓",
+  waitBackup:"Demande de la sauvegarde à la TV…", gotBackup:"Sauvegarde téléchargée ✓ Garde-la en lieu sûr : elle contient les identifiants.",
+  off:"désactivée", films:"films", seriesW:"séries", channelsW:"chaînes", portalW:"Adresse du portail", macW:"Adresse MAC", serverW:"Adresse du serveur", userW:"Nom d'utilisateur", m3uW:"URL de la playlist (M3U)"
 };
 const lang = (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en";
 const t = k => (lang === "fr" ? FR[k] : EN[k]) || EN[k];
 if (lang !== "fr") {
   document.documentElement.lang = "en";
   document.querySelectorAll("[data-t]").forEach(e => { if (EN[e.dataset.t]) e.textContent = EN[e.dataset.t]; });
-  document.title = "NuevoTV – Add from anywhere";
+  document.querySelectorAll("[data-tp]").forEach(e => { if (EN[e.dataset.tp]) e.placeholder = EN[e.dataset.tp]; });
 }
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
+function show(el, text, cls) { const m = $(el); m.textContent = text; m.className = "msg " + cls; }
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-let kind = "xtream";
-document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
-  kind = b.dataset.k;
-  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
-  document.querySelectorAll(".f").forEach(f => f.classList.toggle("on", f.dataset.f.split(" ").includes(kind)));
-});
-
-const codeInput = document.getElementById("code");
-if (location.hash.length > 1) codeInput.value = decodeURIComponent(location.hash.slice(1));
-codeInput.addEventListener("input", () => {
-  let v = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  codeInput.value = v.length > 4 ? v.slice(0, 4) + "-" + v.slice(4) : v;
-});
-
-const enc = new TextEncoder();
+/* ---------- crypto + relay (same scheme as the TV) ---------- */
+const enc = new TextEncoder(), dec = new TextDecoder();
 const norm = c => c.toUpperCase().replace(/[^A-Z0-9]/g, "");
 async function sha256(s) { return new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s))); }
 async function topic(code) {
   const h = await sha256("nuevotv-topic:" + norm(code));
   return "nuevotv-" + Array.from(h).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
+async function aesKey(code) { return crypto.subtle.importKey("raw", await sha256("nuevotv-key:" + norm(code)), "AES-GCM", false, ["encrypt", "decrypt"]); }
 async function encrypt(code, text) {
-  const key = await crypto.subtle.importKey("raw", await sha256("nuevotv-key:" + norm(code)), "AES-GCM", false, ["encrypt"]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text)));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(code), enc.encode(text)));
   const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
   let bin = ""; all.forEach(b => bin += String.fromCharCode(b));
   return btoa(bin);
 }
-const val = id => document.getElementById(id).value.trim();
-function show(text, ok) { const m = document.getElementById("msg"); m.textContent = text; m.className = "msg " + (ok ? "ok" : "err"); }
+async function decrypt(code, b64) {
+  const bytes = Uint8Array.from(atob(b64.trim()), c => c.charCodeAt(0));
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await aesKey(code), bytes.slice(12));
+  return dec.decode(pt);
+}
+async function sendToTv(code, payload) {
+  const r = await fetch("https://ntfy.sh/" + await topic(code), { method: "POST", body: await encrypt(code, JSON.stringify(payload)) });
+  if (!r.ok) throw new Error(r.status);
+}
+/** Everything the TV posted in the last 12 hours, decrypted, oldest first. */
+async function fromTv(code) {
+  const r = await fetch("https://ntfy.sh/" + await topic(code) + "-tv/json?poll=1&since=12h");
+  const out = [];
+  for (const line of (await r.text()).split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const ev = JSON.parse(line);
+      if (ev.event !== "message") continue;
+      const text = ev.attachment && ev.attachment.url ? await (await fetch(ev.attachment.url)).text() : ev.message;
+      out.push(JSON.parse(await decrypt(code, text)));
+    } catch (e) { /* not ours */ }
+  }
+  return out;
+}
+const rid = () => Math.random().toString(36).slice(2, 10);
+/** Sends a request and waits for the TV's answer carrying the same id. */
+async function ask(code, payload, kind, seconds = 45) {
+  const id = rid();
+  await sendToTv(code, { ...payload, rid: id });
+  for (let i = 0; i < seconds / 3; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    const got = (await fromTv(code)).filter(m => m.kind === kind && m.rid === id);
+    if (got.length) return got[got.length - 1];
+  }
+  return null;
+}
 
-document.getElementById("send").onclick = async () => {
+/* ---------- the TV's playlists ---------- */
+const codeInput = $("code");
+let playlists = [], editing = null, connectedCode = "";
+function render(snap) {
+  playlists = snap.playlists || [];
+  $("tvPart").classList.remove("hidden");
+  $("device").textContent = snap.device ? "· " + snap.device : "";
+  $("list").innerHTML = playlists.length ? playlists.map(p => {
+    const kind = p.type === "xtream" ? "Xtream" : p.type === "stalker" ? "Stalker" : "M3U";
+    const counts = [p.channels && p.channels + " " + t("channelsW"), p.movies && p.movies + " " + t("films"), p.series && p.series + " " + t("seriesW")].filter(Boolean).join(" · ");
+    return `<button class="pl" data-id="${p.id}"><b>${esc(p.name)}</b> <small>· ${kind}${p.enabled ? "" : " · " + t("off")}</small><br><small>${esc(p.url)}</small>${p.status ? "<br><small>" + esc(p.status) + "</small>" : counts ? "<br><small>" + counts + "</small>" : ""}</button>`;
+  }).join("") : `<p>${t("empty")}</p>`;
+  document.querySelectorAll("#list .pl").forEach(b => b.onclick = () => openEdit(playlists.find(p => String(p.id) === b.dataset.id)));
+}
+function openEdit(p) {
+  editing = p;
+  $("editCard").classList.remove("hidden");
+  $("editTitle").textContent = p.name;
+  $("e_name").value = p.name; $("e_url").value = p.url; $("e_user").value = p.username || ""; $("e_pass").value = "";
+  $("e_epg").value = p.epg || ""; $("e_ua").value = p.ua || "";
+  $("e_urlLabel").textContent = p.type === "stalker" ? t("portalW") : p.type === "xtream" ? t("serverW") : t("m3uW");
+  $("e_userLabel").textContent = p.type === "stalker" ? t("macW") : t("userW");
+  $("e_userBox").style.display = p.type === "m3u" ? "none" : "";
+  $("e_passBox").style.display = p.type === "xtream" ? "" : "none";
+  $("editMsg").className = "msg";
+  $("editCard").scrollIntoView({ behavior: "smooth" });
+}
+$("cancelEdit").onclick = () => { editing = null; $("editCard").classList.add("hidden"); };
+async function connect(force) {
   const code = val("code");
-  if (norm(code).length !== 8) return show(t("badCode"), false);
+  if (norm(code).length !== 8 || (code === connectedCode && !force)) return;
+  connectedCode = code;
+  show("connMsg", t("connecting"), "wait");
+  try {
+    const old = (await fromTv(code)).filter(m => m.kind === "snapshot");
+    if (old.length) { render(old[old.length - 1]); show("connMsg", t("lastKnown"), "wait"); }
+    const snap = await ask(code, { kind: "hello" }, "snapshot");
+    if (snap) { render(snap); show("connMsg", t("connected"), "ok"); }
+    else show("connMsg", t("noAnswer"), "err");
+  } catch (e) { show("connMsg", t("failed"), "err"); }
+}
+$("refresh").onclick = () => connect(true);
+$("saveEdit").onclick = async () => {
+  if (!editing) return;
+  const code = val("code");
+  const payload = { kind: "edit", id: editing.id, name: val("e_name"), url: val("e_url"), username: val("e_user"), epg: val("e_epg"), ua: val("e_ua") };
+  if ($("e_pass").value) payload.password = $("e_pass").value;
+  show("editMsg", t("sending"), "wait");
+  try {
+    const snap = await ask(code, payload, "snapshot");
+    if (snap) { render(snap); show("editMsg", t("saved"), "ok"); } else show("editMsg", t("noAnswer"), "err");
+  } catch (e) { show("editMsg", t("failed"), "err"); }
+};
+$("delete").onclick = async () => {
+  if (!editing || !confirm(t("confirmDelete"))) return;
+  show("editMsg", t("sending"), "wait");
+  try {
+    const snap = await ask(val("code"), { kind: "remove", id: editing.id }, "snapshot");
+    if (snap) { render(snap); editing = null; $("editCard").classList.add("hidden"); show("connMsg", t("deleted"), "ok"); }
+    else show("editMsg", t("noAnswer"), "err");
+  } catch (e) { show("editMsg", t("failed"), "err"); }
+};
+
+if (location.hash.length > 1) codeInput.value = decodeURIComponent(location.hash.slice(1));
+codeInput.addEventListener("input", () => {
+  let v = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  codeInput.value = v.length > 4 ? v.slice(0, 4) + "-" + v.slice(4) : v;
+  connect(false);
+});
+connect(false);
+
+/* ---------- add ---------- */
+let kind = "xtream";
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  kind = b.dataset.k;
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".f").forEach(f => f.classList.toggle("on", f.dataset.f.split(" ").includes(kind)));
+});
+$("getBackup").onclick = async () => {
+  const code = val("code");
+  if (norm(code).length !== 8) return show("msg", t("badCode"), "err");
+  show("msg", t("waitBackup"), "wait");
+  try {
+    const b = await ask(code, { kind: "backup-request" }, "backup");
+    if (!b) return show("msg", t("noAnswer"), "err");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([b.data], { type: "application/json" }));
+    a.download = "NuevoTV-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    show("msg", t("gotBackup"), "ok");
+  } catch (e) { show("msg", t("failed"), "err"); }
+};
+$("send").onclick = async () => {
+  const code = val("code");
+  if (norm(code).length !== 8) return show("msg", t("badCode"), "err");
   let payload;
   if (kind === "keys") {
-    if (!val("tmdb") && !val("subdl")) return show(t("missing"), false);
+    if (!val("tmdb") && !val("subdl")) return show("msg", t("missing"), "err");
     payload = { kind: "keys", tmdb: val("tmdb"), subdl: val("subdl") };
   } else if (kind === "backup") {
-    const f = document.getElementById("file").files[0];
-    if (!f) return show(t("missing"), false);
+    const f = $("file").files[0];
+    if (!f) return show("msg", t("missing"), "err");
     payload = { kind: "backup", data: await f.text() };
   } else {
-    const url = val(kind === "xtream" ? "url_x" : kind === "stalker" ? "url_s" : "url_m");
-    if (!url) return show(t("missing"), false);
+    const url = val(kind === "xtream" ? "url_x" : "url_s");
+    if (!url) return show("msg", t("missing"), "err");
     payload = { kind: "playlist", type: kind, name: val("name"), url,
-      username: kind === "xtream" ? val("user") : kind === "stalker" ? val("mac") : "",
-      password: kind === "xtream" ? document.getElementById("pass").value : "", epg: val("epg") };
+      username: kind === "xtream" ? val("user") : val("mac"),
+      password: kind === "xtream" ? $("pass").value : "", epg: val("epg") };
   }
-  show(t("sending"), true);
+  show("msg", t("sending"), "wait");
   try {
-    const body = await encrypt(code, JSON.stringify(payload));
-    const r = await fetch("https://ntfy.sh/" + await topic(code), { method: "POST", body });
-    if (!r.ok) throw new Error(r.status);
-    show(t("sent"), true);
-  } catch (e) { show(t("failed"), false); }
+    await sendToTv(code, payload);
+    show("msg", t("sent"), "ok");
+    if (payload.kind === "playlist" || payload.kind === "backup") setTimeout(() => connect(true), 8000);
+  } catch (e) { show("msg", t("failed"), "err"); }
 };
 </script>
 </body>
