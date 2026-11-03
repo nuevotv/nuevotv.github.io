@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>NuevoTV – Ajout à distance</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#121040,#02020a 70%);color:#fff;min-height:100vh}
+  main{max-width:520px;margin:0 auto;padding:28px 18px 60px}
+  h1{font-size:30px;margin:0 0 4px;background:linear-gradient(90deg,#6ef0ff,#fff,#ff5cc8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p{color:#c3c2e6;line-height:1.5}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 6px}
+  .tabs button{flex:1 1 30%;margin:0;padding:11px 6px;border-radius:12px;background:#ffffff14;color:#fff;font-weight:600;font-size:14px}
+  .tabs button.on{background:#fff;color:#0a0826}
+  label{display:block;font-size:13px;color:#c3c2e6;margin:14px 0 6px}
+  input{width:100%;padding:14px;border-radius:12px;border:1px solid #ffffff26;background:#0f0f2e;color:#fff;font-size:16px}
+  input.code{font-size:26px;letter-spacing:4px;text-transform:uppercase;text-align:center;font-weight:700}
+  button{margin-top:22px;width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#7c6cff,#ff5cc8);color:#fff;font-size:17px;font-weight:700}
+  .card{background:#ffffff0d;border:1px solid #ffffff1a;border-radius:16px;padding:16px;margin-top:18px}
+  .f{display:none}.f.on{display:block}
+  .msg{margin-top:18px;padding:14px;border-radius:12px;display:none}
+  .ok{display:block;background:#1d4d3a}.err{display:block;background:#5a1d2b}
+  small{color:#8a88b5}
+</style>
+</head>
+<body>
+<main>
+  <h1>NuevoTV</h1>
+  <p data-t="intro">Envoie une playlist, tes clés API ou un fichier de sauvegarde vers une TV, où qu'elle soit. Le code s'affiche sur la TV dans Réglages → Ajouter de n'importe où.</p>
+
+  <div class="card">
+    <label data-t="code">Code de la TV</label>
+    <input id="code" class="code" placeholder="ABCD-EFGH" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-k="xtream" class="on">Xtream</button>
+    <button data-k="m3u">M3U</button>
+    <button data-k="stalker">Stalker</button>
+    <button data-k="keys" data-t="keysTab">Clés API</button>
+    <button data-k="backup" data-t="backupTab">Sauvegarde</button>
+  </div>
+
+  <div class="card">
+    <div class="f on" data-f="xtream m3u stalker">
+      <label data-t="name">Nom</label><input id="name" placeholder="Ma TV">
+    </div>
+    <div class="f on" data-f="xtream">
+      <label data-t="server">Adresse du serveur</label><input id="url_x" type="url" placeholder="http://fournisseur.exemple:8080" autocapitalize="none">
+      <label data-t="user">Nom d'utilisateur</label><input id="user" autocapitalize="none" autocorrect="off">
+      <label data-t="pass">Mot de passe</label><input id="pass" type="password">
+    </div>
+    <div class="f" data-f="m3u">
+      <label data-t="m3u">URL de la playlist (M3U)</label><input id="url_m" type="url" placeholder="http://.../get.php?...type=m3u_plus" autocapitalize="none">
+    </div>
+    <div class="f" data-f="stalker">
+      <label data-t="portal">Adresse du portail</label><input id="url_s" type="url" placeholder="http://portail.exemple:8080/c/" autocapitalize="none">
+      <label data-t="mac">Adresse MAC</label><input id="mac" placeholder="00:1A:79:12:34:56" autocapitalize="characters" autocorrect="off">
+    </div>
+    <div class="f on" data-f="xtream m3u stalker">
+      <label><span data-t="epg">URL EPG / XMLTV en plus</span> <small data-t="optional">(facultatif)</small></label><input id="epg" type="url" autocapitalize="none">
+    </div>
+    <div class="f" data-f="keys">
+      <label data-t="tmdb">Clé API TMDB</label><input id="tmdb" autocapitalize="none" autocorrect="off">
+      <label data-t="subdl">Clé API SubDL</label><input id="subdl" autocapitalize="none" autocorrect="off">
+    </div>
+    <div class="f" data-f="backup">
+      <label data-t="file">Fichier de sauvegarde (.json)</label><input id="file" type="file" accept=".json,application/json">
+    </div>
+    <button id="send" data-t="send">Envoyer à la TV</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <p><small data-t="privacy">Tout est chiffré sur ton téléphone avec le code de la TV avant d'être envoyé : le relais (ntfy.sh) ne voit jamais tes identifiants. La TV le reçoit dans les secondes qui suivent si NuevoTV est ouverte, sinon au prochain démarrage (dans les 12 heures).</small></p>
+</main>
+<script>
+const EN = {
+  intro:"Send a playlist, your API keys or a settings file to a TV, wherever it is. The code is on the TV in Settings → Add from anywhere.",
+  code:"TV code", keysTab:"API keys", backupTab:"Backup", name:"Name", server:"Server address", user:"Username", pass:"Password",
+  m3u:"Playlist URL (M3U)", portal:"Portal address", mac:"MAC address", epg:"Extra EPG / XMLTV URL", optional:"(optional)",
+  tmdb:"TMDB API key", subdl:"SubDL API key", file:"Settings file (.json)", send:"Send to TV",
+  privacy:"Everything is encrypted on your phone with the TV's code before it's sent: the relay (ntfy.sh) never sees your logins. The TV gets it within seconds if NuevoTV is open, otherwise next time it starts (within 12 hours).",
+  badCode:"Type the 8-character code shown on the TV.", missing:"Fill in the address (or a key, or choose a file).",
+  sending:"Sending…", sent:"Sent ✓ The TV will show a message when it arrives.", failed:"Sending failed – check the connection and try again."
+};
+const FR = {
+  badCode:"Tape le code de 8 caractères affiché sur la TV.", missing:"Remplis l'adresse (ou une clé, ou choisis un fichier).",
+  sending:"Envoi…", sent:"Envoyé ✓ La TV affichera un message à la réception.", failed:"Échec de l'envoi – vérifie la connexion et réessaie."
+};
+const lang = (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en";
+const t = k => (lang === "fr" ? FR[k] : EN[k]) || EN[k];
+if (lang !== "fr") {
+  document.documentElement.lang = "en";
+  document.querySelectorAll("[data-t]").forEach(e => { if (EN[e.dataset.t]) e.textContent = EN[e.dataset.t]; });
+  document.title = "NuevoTV – Add from anywhere";
+}
+
+let kind = "xtream";
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  kind = b.dataset.k;
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".f").forEach(f => f.classList.toggle("on", f.dataset.f.split(" ").includes(kind)));
+});
+
+const codeInput = document.getElementById("code");
+if (location.hash.length > 1) codeInput.value = decodeURIComponent(location.hash.slice(1));
+codeInput.addEventListener("input", () => {
+  let v = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  codeInput.value = v.length > 4 ? v.slice(0, 4) + "-" + v.slice(4) : v;
+});
+
+const enc = new TextEncoder();
+const norm = c => c.toUpperCase().replace(/[^A-Z0-9]/g, "");
+async function sha256(s) { return new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s))); }
+async function topic(code) {
+  const h = await sha256("nuevotv-topic:" + norm(code));
+  return "nuevotv-" + Array.from(h).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+}
+async function encrypt(code, text) {
+  const key = await crypto.subtle.importKey("raw", await sha256("nuevotv-key:" + norm(code)), "AES-GCM", false, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(text)));
+  const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
+  let bin = ""; all.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+const val = id => document.getElementById(id).value.trim();
+function show(text, ok) { const m = document.getElementById("msg"); m.textContent = text; m.className = "msg " + (ok ? "ok" : "err"); }
+
+document.getElementById("send").onclick = async () => {
+  const code = val("code");
+  if (norm(code).length !== 8) return show(t("badCode"), false);
+  let payload;
+  if (kind === "keys") {
+    if (!val("tmdb") && !val("subdl")) return show(t("missing"), false);
+    payload = { kind: "keys", tmdb: val("tmdb"), subdl: val("subdl") };
+  } else if (kind === "backup") {
+    const f = document.getElementById("file").files[0];
+    if (!f) return show(t("missing"), false);
+    payload = { kind: "backup", data: await f.text() };
+  } else {
+    const url = val(kind === "xtream" ? "url_x" : kind === "stalker" ? "url_s" : "url_m");
+    if (!url) return show(t("missing"), false);
+    payload = { kind: "playlist", type: kind, name: val("name"), url,
+      username: kind === "xtream" ? val("user") : kind === "stalker" ? val("mac") : "",
+      password: kind === "xtream" ? document.getElementById("pass").value : "", epg: val("epg") };
+  }
+  show(t("sending"), true);
+  try {
+    const body = await encrypt(code, JSON.stringify(payload));
+    const r = await fetch("https://ntfy.sh/" + await topic(code), { method: "POST", body });
+    if (!r.ok) throw new Error(r.status);
+    show(t("sent"), true);
+  } catch (e) { show(t("failed"), false); }
+};
+</script>
+</body>
+</html>
