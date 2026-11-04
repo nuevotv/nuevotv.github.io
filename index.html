@@ -93,6 +93,8 @@
     </div>
     <div class="f" data-f="backup">
       <button class="sec" id="getBackup" data-t="getBackup">Télécharger la sauvegarde de la TV</button>
+      <button class="sec" id="listBackups" data-t="listBackups">Sauvegardes automatiques (chaque semaine)</button>
+      <div id="weekly"></div>
       <label data-t="file">Restaurer un fichier de sauvegarde (.json)</label><input id="file" type="file" accept=".json,application/json">
     </div>
     <button id="send" data-t="send">Envoyer à la TV</button>
@@ -108,7 +110,7 @@ const EN = {
   epg:"Extra EPG / XMLTV URL", optional:"(optional)", uaHint:"(optional – if the provider refuses the connection)",
   save:"Save and reload on the TV", delete:"Delete from the TV", cancel:"Cancel", add:"Add", keysTab:"API keys", backupTab:"Backup",
   myTv:"My TV", server:"Server address", user:"Username", portal:"Portal address", mac:"MAC address", tmdb:"TMDB API key", subdl:"SubDL API key",
-  getBackup:"Download the TV's backup", file:"Restore a settings file (.json)", send:"Send to TV",
+  getBackup:"Download the TV's backup (now)", listBackups:"Automatic backups (every week)", file:"Restore a settings file (.json)", send:"Send to TV",
   privacy:"Everything is encrypted on your phone with the TV's code: the relay (ntfy.sh) never sees your logins, and passwords never leave the TV. NuevoTV must be open on the TV to answer.",
   badCode:"Type the 8-character code shown on the TV.", missing:"Fill in the address (or a key, or choose a file).",
   sending:"Sending…", sent:"Sent ✓ The TV shows a message when it arrives.", failed:"Sending failed – check the connection and try again.",
@@ -116,6 +118,8 @@ const EN = {
   lastKnown:"Last list received from the TV – asking it for an update…", connected:"Connected ✓", empty:"No playlist on this TV yet.",
   saved:"Sent ✓ The TV is saving it and reloading the playlist.", confirmDelete:"Delete this playlist from the TV?", deleted:"Deleted ✓",
   waitBackup:"Asking the TV for its backup…", gotBackup:"Backup downloaded ✓ Keep it safe: it contains the logins.",
+  waitList:"Asking the TV for its weekly backups…", noWeekly:"No weekly backup yet: the TV makes the first one a few minutes after it starts, then one every week.",
+  pickWeekly:"Tap a backup to save it on this phone:",
   off:"off", films:"films", seriesW:"series", channelsW:"channels", portalW:"Portal address", macW:"MAC address", serverW:"Server address", userW:"Username", m3uW:"Playlist URL (M3U)"
 };
 const FR = {
@@ -125,6 +129,8 @@ const FR = {
   lastKnown:"Dernière liste reçue de la TV – demande de mise à jour…", connected:"Connecté ✓", empty:"Aucune playlist sur cette TV pour l'instant.",
   saved:"Envoyé ✓ La TV enregistre et recharge la playlist.", confirmDelete:"Supprimer cette playlist de la TV ?", deleted:"Supprimée ✓",
   waitBackup:"Demande de la sauvegarde à la TV…", gotBackup:"Sauvegarde téléchargée ✓ Garde-la en lieu sûr : elle contient les identifiants.",
+  waitList:"Demande des sauvegardes de la semaine à la TV…", noWeekly:"Pas encore de sauvegarde automatique : la TV fait la première quelques minutes après son démarrage, puis une chaque semaine.",
+  pickWeekly:"Touche une sauvegarde pour l'enregistrer sur ce téléphone :",
   off:"désactivée", films:"films", seriesW:"séries", channelsW:"chaînes", portalW:"Adresse du portail", macW:"Adresse MAC", serverW:"Adresse du serveur", userW:"Nom d'utilisateur", m3uW:"URL de la playlist (M3U)"
 };
 const lang = (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en";
@@ -270,6 +276,33 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".f").forEach(f => f.classList.toggle("on", f.dataset.f.split(" ").includes(kind)));
 });
+function saveFile(text, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$("listBackups").onclick = async () => {
+  const code = val("code");
+  if (norm(code).length !== 8) return show("msg", t("badCode"), "err");
+  show("msg", t("waitList"), "wait");
+  $("weekly").innerHTML = "";
+  try {
+    const r = await ask(code, { kind: "backup-list" }, "backups");
+    if (!r) return show("msg", t("noAnswer"), "err");
+    const items = r.items || [];
+    if (!items.length) return show("msg", t("noWeekly"), "ok");
+    show("msg", t("pickWeekly"), "ok");
+    $("weekly").innerHTML = items.map(i => `<button class="pl" data-n="${esc(i.name)}"><b>${new Date(i.at).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</b><br><small>${esc(i.name)}</small></button>`).join("");
+    document.querySelectorAll("#weekly .pl").forEach(b => b.onclick = async () => {
+      show("msg", t("waitBackup"), "wait");
+      const got = await ask(code, { kind: "backup-request", name: b.dataset.n }, "backup").catch(() => null);
+      if (!got) return show("msg", t("noAnswer"), "err");
+      saveFile(got.data, b.dataset.n);
+      show("msg", t("gotBackup"), "ok");
+    });
+  } catch (e) { show("msg", t("failed"), "err"); }
+};
 $("getBackup").onclick = async () => {
   const code = val("code");
   if (norm(code).length !== 8) return show("msg", t("badCode"), "err");
