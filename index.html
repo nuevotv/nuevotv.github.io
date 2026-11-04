@@ -90,6 +90,7 @@
     <div class="f" data-f="keys">
       <label data-t="tmdb">Clé API TMDB</label><input id="tmdb" autocapitalize="none" autocorrect="off">
       <label data-t="subdl">Clé API SubDL</label><input id="subdl" autocapitalize="none" autocorrect="off">
+      <label data-t="deepl">Clé API DeepL (traduction des sous-titres)</label><input id="deepl" autocapitalize="none" autocorrect="off">
     </div>
     <div class="f" data-f="backup">
       <button class="sec" id="getBackup" data-t="getBackup">Télécharger la sauvegarde de la TV</button>
@@ -107,7 +108,7 @@ const EN = {
   code:"TV code", tvPlaylists:"The TV's playlists", refresh:"Refresh the list", name:"Name", pass:"Password", keepPass:"Leave empty to keep the current one",
   epg:"Extra EPG / XMLTV URL", optional:"(optional)", uaHint:"(optional – if the provider refuses the connection)",
   save:"Save and reload on the TV", delete:"Delete from the TV", cancel:"Cancel", add:"Add", keysTab:"API keys", backupTab:"Backup",
-  myTv:"My TV", server:"Server address", user:"Username", portal:"Portal address", mac:"MAC address", tmdb:"TMDB API key", subdl:"SubDL API key",
+  myTv:"My TV", server:"Server address", user:"Username", portal:"Portal address", mac:"MAC address", tmdb:"TMDB API key", subdl:"SubDL API key", deepl:"DeepL API key (subtitle translation)",
   getBackup:"Download the TV's backup", file:"Restore a settings file (.json)", send:"Send to TV",
   privacy:"Everything is encrypted on your phone with the TV's code: the relay (ntfy.sh) never sees your logins, and passwords never leave the TV. NuevoTV must be open on the TV to answer.",
   badCode:"Type the 8-character code shown on the TV.", missing:"Fill in the address (or a key, or choose a file).",
@@ -289,8 +290,8 @@ $("send").onclick = async () => {
   if (norm(code).length !== 8) return show("msg", t("badCode"), "err");
   let payload;
   if (kind === "keys") {
-    if (!val("tmdb") && !val("subdl")) return show("msg", t("missing"), "err");
-    payload = { kind: "keys", tmdb: val("tmdb"), subdl: val("subdl") };
+    if (!val("tmdb") && !val("subdl") && !val("deepl")) return show("msg", t("missing"), "err");
+    payload = { kind: "keys", tmdb: val("tmdb"), subdl: val("subdl"), deepl: val("deepl") };
   } else if (kind === "backup") {
     const f = $("file").files[0];
     if (!f) return show("msg", t("missing"), "err");
