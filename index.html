@@ -29,6 +29,9 @@
   .pl b{font-size:16px}
   small{color:#8a88b5}
   .hidden{display:none}
+  .use{display:flex;gap:8px;flex-wrap:wrap}
+  .use label{flex:1 1 30%;margin:0;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 6px;border-radius:12px;background:#ffffff14;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  .use input{width:auto;margin:0;accent-color:#7c6cff;width:18px;height:18px}
 </style>
 </head>
 <body>
@@ -55,6 +58,8 @@
       <label id="e_urlLabel"></label><input id="e_url" type="url" autocapitalize="none">
       <div id="e_userBox"><label id="e_userLabel"></label><input id="e_user" autocapitalize="none" autocorrect="off"></div>
       <div id="e_passBox"><label data-t="pass">Mot de passe</label><input id="e_pass" type="password" data-tp="keepPass" placeholder="Laisser vide pour garder l'actuel"></div>
+      <label data-t="show">À afficher sur la TV</label>
+      <div class="use"><label><input type="checkbox" id="e_live" checked> <span data-t="liveW">TV en direct</span></label><label><input type="checkbox" id="e_movies" checked> <span data-t="moviesW">Films</span></label><label><input type="checkbox" id="e_series" checked> <span data-t="seriesC">Séries</span></label></div>
       <label><span data-t="epg">URL EPG / XMLTV en plus</span> <small data-t="optional">(facultatif)</small></label><input id="e_epg" type="url" autocapitalize="none">
       <label><span>User agent</span> <small data-t="uaHint">(facultatif – si le fournisseur refuse la connexion)</small></label><input id="e_ua" autocapitalize="none" autocorrect="off">
       <button id="saveEdit" data-t="save">Enregistrer et recharger sur la TV</button>
@@ -85,6 +90,8 @@
       <label data-t="mac">Adresse MAC</label><input id="mac" placeholder="00:1A:79:12:34:56" autocapitalize="characters" autocorrect="off">
     </div>
     <div class="f on" data-f="xtream stalker">
+      <label data-t="show">À afficher sur la TV</label>
+      <div class="use"><label><input type="checkbox" id="u_live" checked> <span data-t="liveW">TV en direct</span></label><label><input type="checkbox" id="u_movies" checked> <span data-t="moviesW">Films</span></label><label><input type="checkbox" id="u_series" checked> <span data-t="seriesC">Séries</span></label></div>
       <label><span data-t="epg">URL EPG / XMLTV en plus</span> <small data-t="optional">(facultatif)</small></label><input id="epg" type="url" autocapitalize="none">
     </div>
     <div class="f" data-f="keys">
@@ -120,7 +127,7 @@ const EN = {
   waitBackup:"Asking the TV for its backup…", gotBackup:"Backup downloaded ✓ Keep it safe: it contains the logins.",
   waitList:"Asking the TV for its weekly backups…", noWeekly:"No weekly backup yet: the TV makes the first one a few minutes after it starts, then one every week.",
   pickWeekly:"Tap a backup to save it on this phone:",
-  off:"off", films:"films", seriesW:"series", channelsW:"channels", portalW:"Portal address", macW:"MAC address", serverW:"Server address", userW:"Username", m3uW:"Playlist URL (M3U)"
+  show:"Show on the TV", liveW:"Live TV", moviesW:"Movies", seriesC:"Series", useNone:"Tick at least Live TV, Movies or Series.", off:"off", films:"films", seriesW:"series", channelsW:"channels", portalW:"Portal address", macW:"MAC address", serverW:"Server address", userW:"Username", m3uW:"Playlist URL (M3U)"
 };
 const FR = {
   badCode:"Tape le code de 8 caractères affiché sur la TV.", missing:"Remplis l'adresse (ou une clé, ou choisis un fichier).",
@@ -131,7 +138,7 @@ const FR = {
   waitBackup:"Demande de la sauvegarde à la TV…", gotBackup:"Sauvegarde téléchargée ✓ Garde-la en lieu sûr : elle contient les identifiants.",
   waitList:"Demande des sauvegardes de la semaine à la TV…", noWeekly:"Pas encore de sauvegarde automatique : la TV fait la première quelques minutes après son démarrage, puis une chaque semaine.",
   pickWeekly:"Touche une sauvegarde pour l'enregistrer sur ce téléphone :",
-  off:"désactivée", films:"films", seriesW:"séries", channelsW:"chaînes", portalW:"Adresse du portail", macW:"Adresse MAC", serverW:"Adresse du serveur", userW:"Nom d'utilisateur", m3uW:"URL de la playlist (M3U)"
+  off:"désactivée", show:"À afficher sur la TV", liveW:"TV en direct", moviesW:"Films", seriesC:"Séries", useNone:"Coche au moins TV, Films ou Séries.", films:"films", seriesW:"séries", channelsW:"chaînes", portalW:"Adresse du portail", macW:"Adresse MAC", serverW:"Adresse du serveur", userW:"Nom d'utilisateur", m3uW:"URL de la playlist (M3U)"
 };
 const lang = (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en";
 const t = k => (lang === "fr" ? FR[k] : EN[k]) || EN[k];
@@ -218,6 +225,8 @@ function openEdit(p) {
   $("editTitle").textContent = p.name;
   $("e_name").value = p.name; $("e_url").value = p.url; $("e_user").value = p.username || ""; $("e_pass").value = "";
   $("e_epg").value = p.epg || ""; $("e_ua").value = p.ua || "";
+  const u = p.use || {};
+  $("e_live").checked = u.live !== false; $("e_movies").checked = u.movies !== false; $("e_series").checked = u.series !== false;
   $("e_urlLabel").textContent = p.type === "stalker" ? t("portalW") : p.type === "xtream" ? t("serverW") : t("m3uW");
   $("e_userLabel").textContent = p.type === "stalker" ? t("macW") : t("userW");
   $("e_userBox").style.display = p.type === "m3u" ? "none" : "";
@@ -243,7 +252,9 @@ $("refresh").onclick = () => connect(true);
 $("saveEdit").onclick = async () => {
   if (!editing) return;
   const code = val("code");
-  const payload = { kind: "edit", id: editing.id, name: val("e_name"), url: val("e_url"), username: val("e_user"), epg: val("e_epg"), ua: val("e_ua") };
+  const payload = { kind: "edit", id: editing.id, name: val("e_name"), url: val("e_url"), username: val("e_user"), epg: val("e_epg"), ua: val("e_ua"),
+    use: { live: $("e_live").checked, movies: $("e_movies").checked, series: $("e_series").checked } };
+  if (!payload.use.live && !payload.use.movies && !payload.use.series) return show("editMsg", t("useNone"), "err");
   if ($("e_pass").value) payload.password = $("e_pass").value;
   show("editMsg", t("sending"), "wait");
   try {
@@ -333,7 +344,9 @@ $("send").onclick = async () => {
     if (!url) return show("msg", t("missing"), "err");
     payload = { kind: "playlist", type: kind, name: val("name"), url,
       username: kind === "xtream" ? val("user") : val("mac"),
-      password: kind === "xtream" ? $("pass").value : "", epg: val("epg") };
+      password: kind === "xtream" ? $("pass").value : "", epg: val("epg"),
+      use: { live: $("u_live").checked, movies: $("u_movies").checked, series: $("u_series").checked } };
+    if (!payload.use.live && !payload.use.movies && !payload.use.series) return show("msg", t("useNone"), "err");
   }
   show("msg", t("sending"), "wait");
   try {
