@@ -81,6 +81,7 @@
     info.style.display = 'none';
     var kick = el('div', 'kicker', 'TENDANCE'), ht = el('div', 'h-title'), hm = el('div', 'h-meta'), ho = el('div', 'h-over');
     var hb = el('div', 'h-btns'), hbtn = el('div', 'btn f', 'Voir la fiche');
+    hbtn.setAttribute('data-top', '1');
     hb.appendChild(hbtn);
     info.appendChild(kick); info.appendChild(ht); info.appendChild(hm); info.appendChild(ho); info.appendChild(hb);
     hero.appendChild(info);
@@ -184,13 +185,17 @@
     var field = el('div', 's-field');
     left.appendChild(field);
     var q = '', timer = null, reqId = 0;
-    function upd() { fieldHtml(field, q, 'Tape un titre de film ou de série'); }
+    function upd() { fieldHtml(field, q, 'Titre, ID TMDB ou IMDb (tt…)'); }
     function change() { upd(); clearTimeout(timer); timer = setTimeout(run, 500); }
     left.appendChild(makeKeyboard({
       onChar: function (c) { if (q.length < 60) { q += c; change(); } },
       onBack: function () { q = q.slice(0, -1); change(); },
       onClear: function () { q = ''; change(); }
     }));
+    var pbtn = el('div', 'btn f', 'Saisir avec le téléphone');
+    pbtn.style.marginTop = '8px';
+    pbtn.act = function () { CT.phoneInput('search', function (v) { q = v.slice(0, 80); change(); return true; }); };
+    left.appendChild(pbtn);
     root.appendChild(left);
 
     var right = el('div', 's-right vs');
@@ -199,23 +204,69 @@
     root.appendChild(right);
     upd();
 
-    function run() {
-      var my = ++reqId;
+    function show(res, label, my) {
+      if (scr.dead || my !== reqId) return;
       grid.innerHTML = '';
-      if (q.replace(/\s/g, '').length < 2) { count.textContent = ''; return; }
-      count.textContent = 'Recherche…';
-      CT.tmdb('/search/multi', { query: q, include_adult: 'false' }, function (err, d) {
-        if (scr.dead || my !== reqId) return;
-        if (err || !d) { count.textContent = err && err.nokey ? 'Ajoute ta clé TMDB dans Réglages.' : 'Recherche impossible (' + (err && err.status !== undefined ? 'code ' + err.status : 'erreur') + ')'; return; }
-        var res = [];
-        each(d.results || [], function (it) { if ((it.media_type === 'movie' || it.media_type === 'tv') && (it.poster_path || it.backdrop_path)) res.push(it); });
-        res = res.slice(0, 24);
-        count.textContent = res.length ? res.length + ' résultat' + (res.length > 1 ? 's' : '') : 'Aucun résultat';
-        each(res, function (it) {
-          var n = norm(it, it.media_type);
-          grid.appendChild(makeCard(n, { badge: n.type === 'tv' ? 'Série' : undefined }));
-        });
+      count.textContent = res.length ? label + res.length + ' résultat' + (res.length > 1 ? 's' : '') : 'Aucun résultat';
+      each(res.slice(0, 40), function (it) {
+        var n = norm(it, it.media_type);
+        n.title = n.title + (n.year ? ' (' + n.year + ')' : '');
+        grid.appendChild(makeCard(n, { badge: n.type === 'tv' ? 'Série' : 'Film' }));
       });
+    }
+    function fail(err, my) {
+      if (scr.dead || my !== reqId) return;
+      count.textContent = err && err.nokey ? 'Ajoute ta clé TMDB dans Réglages.' : 'Recherche impossible (' + (err && err.status !== undefined ? 'code ' + err.status : 'erreur') + ')';
+    }
+    function run() {
+      var my = ++reqId, raw = q.replace(/^\s+|\s+$/g, '');
+      grid.innerHTML = '';
+      if (raw.length < 1 || (raw.length < 2 && !/^\d$/.test(raw))) { count.textContent = ''; return; }
+      count.textContent = 'Recherche…';
+      var m;
+      /* IMDb : tt1234567 */
+      if (/^tt\d{5,}$/i.test(raw)) {
+        CT.tmdb('/find/' + raw.toLowerCase(), { external_source: 'imdb_id' }, function (err, d) {
+          if (err || !d) return fail(err, my);
+          var res = [];
+          each(d.movie_results || [], function (x) { x.media_type = 'movie'; res.push(x); });
+          each(d.tv_results || [], function (x) { x.media_type = 'tv'; res.push(x); });
+          show(res, 'IMDb ' + raw.toLowerCase() + ' : ', my);
+        });
+        return;
+      }
+      /* ID TMDB : que des chiffres, on essaie film ET série */
+      if (/^\d{1,9}$/.test(raw)) {
+        var res2 = [], pend = 2, nokey = false;
+        var fin = function () {
+          if (--pend > 0) return;
+          if (nokey) return fail({ nokey: true }, my);
+          show(res2, 'ID TMDB ' + raw + ' : ', my);
+        };
+        each(['movie', 'tv'], function (t) {
+          CT.tmdb('/' + t + '/' + raw, {}, function (err, d) {
+            if (err && err.nokey) nokey = true;
+            if (!err && d && d.id) { d.media_type = t; res2.push(d); }
+            fin();
+          });
+        });
+        return;
+      }
+      /* titre, avec année facultative à la fin : « under the sun 2014 » */
+      var title = raw, year = '';
+      m = raw.match(/^(.*\S)\s+((?:19|20)\d{2})$/);
+      if (m) { title = m[1]; year = m[2]; }
+      var pm = { query: title, include_adult: 'false' }, pt = { query: title, include_adult: 'false' };
+      if (year) { pm.year = year; pt.first_air_date_year = year; }
+      var all = [], pend2 = 2, lastErr = null;
+      var fin2 = function () {
+        if (--pend2 > 0) return;
+        if (!all.length && lastErr) return fail(lastErr, my);
+        all.sort(function (a, b) { return (b.popularity || 0) - (a.popularity || 0); });
+        show(all, '', my);
+      };
+      CT.tmdb('/search/movie', pm, function (err, d) { if (err) lastErr = err; else each(d.results || [], function (x) { x.media_type = 'movie'; all.push(x); }); fin2(); });
+      CT.tmdb('/search/tv', pt, function (err, d) { if (err) lastErr = err; else each(d.results || [], function (x) { x.media_type = 'tv'; all.push(x); }); fin2(); });
     }
     return scr;
   }
@@ -354,6 +405,11 @@
     ok.act = function () { CT.pop(); o.onOk(val); };
     no.act = function () { CT.pop(); };
     row.appendChild(ok); row.appendChild(no);
+    if (o.kind) {
+      var ph = el('div', 'btn f', 'Saisir avec le téléphone');
+      ph.act = function () { CT.phoneInput(o.kind, function (v) { val = v.replace(/\s/g, '').slice(0, 120); upd(); return true; }); };
+      row.appendChild(ph);
+    }
     box.appendChild(row);
     root.appendChild(box);
     CT.push(scr);
@@ -388,8 +444,8 @@
       box.innerHTML = '';
       box.appendChild(el('h1', '', 'Réglages'));
       var rows = [
-        ['Clé TMDB', mask(CT.cfg('tmdb', '')), function () { textEntry({ title: 'Clé TMDB (API v3)', value: CT.cfg('tmdb', ''), hint: 'Colle ou tape ta clé', onOk: function (v) { CT.setCfg('tmdb', v.replace(/\s/g, '')); build(); } }); }],
-        ['Clé SubDL', mask(CT.cfg('subdl', '')), function () { textEntry({ title: 'Clé SubDL', value: CT.cfg('subdl', ''), hint: 'Colle ou tape ta clé', onOk: function (v) { CT.setCfg('subdl', v.replace(/\s/g, '')); build(); } }); }],
+        ['Clé TMDB', mask(CT.cfg('tmdb', '')), function () { textEntry({ kind: 'tmdb', title: 'Clé TMDB (API v3)', value: CT.cfg('tmdb', ''), hint: 'Colle ou tape ta clé', onOk: function (v) { CT.setCfg('tmdb', v.replace(/\s/g, '')); build(); } }); }],
+        ['Clé SubDL', mask(CT.cfg('subdl', '')), function () { textEntry({ kind: 'subdl', title: 'Clé SubDL', value: CT.cfg('subdl', ''), hint: 'Colle ou tape ta clé', onOk: function (v) { CT.setCfg('subdl', v.replace(/\s/g, '')); build(); } }); }],
         ['Langue des sous-titres', labelOf('sublang', LANGS, 'FR'), function () { cycle('sublang', LANGS, 'FR'); build(); }],
         ['Taille des sous-titres', labelOf('subsize', SIZES, 44), function () { cycle('subsize', SIZES, 44); build(); }],
         ['Qualité préférée', labelOf('quality', QUAL, 'auto'), function () { cycle('quality', QUAL, 'auto'); build(); }],

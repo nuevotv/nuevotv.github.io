@@ -131,3 +131,14 @@ html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;backgrou
 
 #toast{position:absolute;left:0;top:960px;width:1920px;text-align:center;z-index:50;display:none}
 #toast span{display:inline-block;background:#fff;color:#0B0D12;font-size:28px;font-weight:700;padding:16px 36px;border-radius:14px}
+
+/* Saisie depuis le téléphone */
+.phone{position:absolute;left:300px;top:150px;width:1320px;height:720px;z-index:60;background:#11151f;border-radius:24px;box-shadow:0 0 0 4px #FF5C4D,0 30px 80px rgba(0,0,0,.8)}
+.ph-title{position:absolute;left:60px;top:40px;font-size:44px;font-weight:800}
+.ph-qr{position:absolute;left:60px;top:140px;width:420px;height:420px;background:#fff;border-radius:16px;padding:10px}
+.ph-qr canvas{width:400px;height:400px}
+.ph-side{position:absolute;left:540px;top:140px;width:720px}
+.ph-step{font-size:34px;font-weight:700;margin-bottom:18px}
+.ph-small{font-size:24px;color:#A7ADBA;margin-top:26px}
+.ph-code{font-size:72px;font-weight:800;letter-spacing:10px;color:#FF5C4D;margin:6px 0 10px 0}
+.ph-status{font-size:28px;color:#C7CCD6;margin:12px 0 26px 0;min-height:36px}

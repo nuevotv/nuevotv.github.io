@@ -141,9 +141,9 @@
     if (o.type === 'tv') bNext = pb('Épisode suivant');
     bot.appendChild(btns); root.appendChild(bot);
 
-    var st = el('div', 'status'), stT = el('div', 'stt'), stS = el('div', 'sub'), stB = el('div', 'btn f', 'Réessayer');
-    stB.style.display = 'none';
-    st.appendChild(stT); st.appendChild(stS); st.appendChild(stB); root.appendChild(st);
+    var st = el('div', 'status'), stT = el('div', 'stt'), stS = el('div', 'sub'), stB = el('div', 'btn f', 'Réessayer'), stD = el('div', 'btn f', 'Mode direct (test)');
+    stB.style.display = 'none'; stD.style.display = 'none';
+    st.appendChild(stT); st.appendChild(stS); st.appendChild(stB); st.appendChild(stD); root.appendChild(st);
 
     var scr = { name: 'player', el: root };
     P.frame = frame; P.barEl = bar;
@@ -194,7 +194,7 @@
 
     function showStatus(t, s, retry) {
       stT.textContent = t; stS.textContent = s || '';
-      st.style.display = 'block'; stB.style.display = retry ? 'inline-block' : 'none';
+      st.style.display = 'block'; stB.style.display = retry ? 'inline-block' : 'none'; stD.style.display = retry ? 'inline-block' : 'none';
       if (retry) { P.errorShown = true; P.hideOverlay(); CT.setFocus(stB); }
     }
     function hideStatus() { st.style.display = 'none'; P.errorShown = false; clearTimeout(P.loadT); }
@@ -203,12 +203,14 @@
       showStatus('Chargement de la vidéo…', 'Quelques secondes. Retour pour revenir à la fiche.', false);
       clearTimeout(P.loadT);
       P.loadT = setTimeout(function () {
-        if (!P.started) showStatus('La vidéo ne démarre pas', 'Le serveur est peut-être occupé. Tu peux réessayer.', true);
-      }, 30000);
+        if (!P.started) showStatus('La vidéo ne démarre pas', 'Le lecteur CineSrc n\u2019a rien chargé. Si ça arrive à chaque fois, la TV est peut-être trop ancienne pour ce lecteur.', true);
+      }, 25000);
       frame.src = embedUrl(P.o, t);
       CT.log('PLAY ' + frame.src);
     }
     stB.act = function () { startLoading(P.now()); };
+    /* Mode direct : ouvre le lecteur CineSrc en plein écran, hors iframe (diagnostic). Retour = revenir à CineTV. */
+    stD.act = function () { save(); CT.log('mode direct'); location.href = embedUrl(P.o, P.now()).replace('controls=false', 'controls=true'); };
 
     function save() {
       if (!P.dur || P.cur < 5) return;

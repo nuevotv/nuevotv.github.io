@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CineTV : saisie depuis le téléphone</title>
+<style>
+body{margin:0;background:#0B0D12;color:#F3F4F6;font-family:Arial,Helvetica,sans-serif}
+.w{max-width:560px;margin:0 auto;padding:28px 20px}
+h1{font-size:30px;margin:0 0 6px}
+.logo{color:#FF5C4D;font-weight:800;font-size:24px;margin-bottom:22px}.logo b{color:#fff}
+p{color:#A7ADBA;line-height:1.5}
+label{display:block;margin:18px 0 8px;font-weight:700}
+input,textarea{width:100%;box-sizing:border-box;font-size:20px;padding:16px;border-radius:12px;border:2px solid #2a3042;background:#171B24;color:#fff}
+button{margin-top:18px;width:100%;font-size:22px;font-weight:700;padding:18px;border:0;border-radius:12px;background:#FF5C4D;color:#fff}
+button:disabled{opacity:.5}
+#r{margin-top:18px;font-weight:700;min-height:28px}
+.ok{color:#5ee08a}.ko{color:#ff8a80}
+</style>
+</head>
+<body>
+<div class="w">
+<div class="logo">CINE<b>TV</b></div>
+<h1 id="h">Saisie</h1>
+<p id="d">Écris ici, ça arrive sur ta TV.</p>
+<div id="codeBox" style="display:none"><label for="c">Code affiché sur la TV</label><input id="c" maxlength="10" autocapitalize="characters" autocomplete="off"></div>
+<label for="t" id="lt">Texte</label>
+<textarea id="t" rows="3" autocomplete="off" autocapitalize="none" spellcheck="false"></textarea>
+<button id="b">Envoyer à la TV</button>
+<div id="r"></div>
+</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search), code = (q.get('c') || '').toLowerCase().replace(/[^a-z0-9]/g, ''), kind = q.get('k') || 'search';
+  var T = { search: ['Recherche', 'Titre du film ou de la série, ID TMDB ou IMDb (tt…)'], tmdb: ['Clé TMDB', 'Colle ta clé TMDB (API v3)'], subdl: ['Clé SubDL', 'Colle ta clé SubDL'] };
+  var info = T[kind] || T.search;
+  document.getElementById('h').textContent = info[0];
+  document.getElementById('lt').textContent = info[1];
+  if (!code) document.getElementById('codeBox').style.display = 'block';
+  var b = document.getElementById('b'), r = document.getElementById('r');
+  b.onclick = function () {
+    var c = code || document.getElementById('c').value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    var v = document.getElementById('t').value.replace(/^\s+|\s+$/g, '');
+    if (!c) { r.className = 'ko'; r.textContent = 'Entre le code affiché sur la TV.'; return; }
+    if (!v) { r.className = 'ko'; r.textContent = 'Écris d’abord quelque chose.'; return; }
+    b.disabled = true; r.className = ''; r.textContent = 'Envoi…';
+    fetch('https://ntfy.sh/cinetv-' + c, { method: 'POST', body: JSON.stringify({ v: v }) })
+      .then(function (x) { if (!x.ok) throw new Error(x.status); r.className = 'ok'; r.textContent = 'Envoyé ✓ Regarde ta TV.'; if (kind !== 'search') document.getElementById('t').value = ''; })
+      .catch(function () { r.className = 'ko'; r.textContent = 'Échec de l’envoi. Vérifie le code et ta connexion.'; })
+      .then(function () { b.disabled = false; });
+  };
+})();
+</script>
+</body>
+</html>

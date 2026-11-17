@@ -127,7 +127,13 @@
   function setFocus(e) {
     if (focused) focused.classList.remove('focus');
     focused = e;
-    if (e) { e.classList.add('focus'); ensureVisible(e); }
+    if (e) {
+      e.classList.add('focus'); ensureVisible(e);
+      if (e.getAttribute('data-top') || (e.parentNode && e.parentNode.id === 'nav')) {
+        var sc = D.querySelectorAll('.scroll');
+        for (var i = 0; i < sc.length; i++) sc[i].scrollTop = 0;
+      }
+    }
   }
   CT.setFocus = setFocus;
 
@@ -278,7 +284,7 @@
     } catch (e) { }
     buildNav();
     D.addEventListener('keydown', onKey, false);
-    CT.log('CineTV ' + CT.version + ' démarré');
+    CT.log('CineTV ' + CT.version + ' démarré'); CT.log('UA ' + navigator.userAgent);
     if (!CT.cfg('tmdb', '')) {
       CT.goTab('settings');
       CT.toast('Bienvenue ! Commence par ta clé TMDB (Réglages > Clé TMDB)', 6000);
