@@ -248,6 +248,7 @@
   }
 
   function exitApp() {
+    try { if (W.CineTVApp && W.CineTVApp.exit) { W.CineTVApp.exit(); return; } } catch (e0) { }
     try { W.tizen.application.getCurrentApplication().exit(); } catch (e) { try { W.close(); } catch (e2) { } }
   }
   CT.exit = exitApp;
