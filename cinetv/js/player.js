@@ -17,6 +17,13 @@
     return ORIGIN + '/embed/' + o.type + '/' + o.id + '?' + p.join('&');
   }
 
+  function hasExt() { return !!(W.CineTVApp && W.CineTVApp.openExternal); }
+  function openExt(o, t) {
+    var u = embedUrl(o, t || 0).replace('controls=false', 'controls=true');
+    CT.toast('Ouverture dans Silk… (Retour pour revenir à CineTV)', 4000);
+    try { W.CineTVApp.openExternal(u); } catch (e) { CT.log('openExternal: ' + e); }
+  }
+
   /* ---------- sous-titres : lecture SRT / VTT ---------- */
   function decode(u8) {
     try { return new W.TextDecoder('utf-8', { fatal: true }).decode(u8); } catch (e) { }
@@ -117,6 +124,7 @@
   W.addEventListener('message', onMsg, false);
 
   CT.play = function (o) {
+    if (hasExt() && CT.cfg('player', 'silk') === 'silk') { openExt(o, o.t || 0); return; }
     var P = { o: o, cur: o.t || 0, curAt: Date.now(), dur: 0, paused: false, started: false, cues: null, subOffset: 0, subText: '', subName: '', lastSave: 0, overlayOn: false, errorShown: false };
     var root = el('div', 'screen player'), $app;
     var frame = D.createElement('iframe');
@@ -144,7 +152,7 @@
     bot.appendChild(brow);
     var btns = el('div', 'p-btns');
     function pb(label) { var b = el('div', 'pb f'); b.innerHTML = label; btns.appendChild(b); return b; }
-    var bPlay = pb(ICON_PAUSE), bBack = pb('−10 s'), bFwd = pb('+10 s'), bSub = pb('Sous-titres'), bM = pb('Sous-titres −0,5 s'), bP = pb('Sous-titres +0,5 s'), bDirect = pb('Mode direct'), bNext = null;
+    var bPlay = pb(ICON_PAUSE), bBack = pb('−10 s'), bFwd = pb('+10 s'), bSub = pb('Sous-titres'), bM = pb('Sous-titres −0,5 s'), bP = pb('Sous-titres +0,5 s'), bDirect = pb(hasExt() ? 'Ouvrir dans Silk' : 'Mode direct'), bNext = null;
     if (o.type === 'tv') bNext = pb('Épisode suivant');
     bot.appendChild(btns); root.appendChild(bot);
 
@@ -217,7 +225,7 @@
     }
     stB.act = function () { startLoading(P.now()); };
     /* Mode direct : ouvre le lecteur CineSrc en plein écran, hors iframe (diagnostic). Retour = revenir à CineTV. */
-    stD.act = function () { save(); CT.log('mode direct'); location.href = embedUrl(P.o, P.now()).replace('controls=false', 'controls=true'); };
+    stD.act = function () { save(); CT.log('mode direct'); if (hasExt()) { try { frame.src = 'about:blank'; } catch (e) { } openExt(P.o, P.now()); return; } location.href = embedUrl(P.o, P.now()).replace('controls=false', 'controls=true'); };
 
     function save() {
       if (!P.dur || P.cur < 5) return;

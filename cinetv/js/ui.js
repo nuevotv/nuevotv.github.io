@@ -458,6 +458,10 @@
         ['Diagnostic', '', diag],
         ['Version', CT.version, function () { }]
       ];
+      if (window.CineTVApp && window.CineTVApp.openExternal) {
+        var PL = [['silk', 'Silk (externe)'], ['embed', 'Intégré']];
+        rows.splice(5, 0, ['Lecteur vidéo', labelOf('player', PL, 'silk'), function () { cycle('player', PL, 'silk'); build(); }]);
+      }
       if (window.CineTVApp && window.CineTVApp.update) {
         rows.splice(rows.length - 1, 0, ['Mettre à jour l\'appli Android', 'v' + (window.CineTVApp.version ? window.CineTVApp.version() : ''), function () { window.CineTVApp.update(); }]);
       }
