@@ -144,7 +144,7 @@
     bot.appendChild(brow);
     var btns = el('div', 'p-btns');
     function pb(label) { var b = el('div', 'pb f'); b.innerHTML = label; btns.appendChild(b); return b; }
-    var bPlay = pb(ICON_PAUSE), bBack = pb('−10 s'), bFwd = pb('+10 s'), bSub = pb('Sous-titres'), bM = pb('Sous-titres −0,5 s'), bP = pb('Sous-titres +0,5 s'), bNext = null;
+    var bPlay = pb(ICON_PAUSE), bBack = pb('−10 s'), bFwd = pb('+10 s'), bSub = pb('Sous-titres'), bM = pb('Sous-titres −0,5 s'), bP = pb('Sous-titres +0,5 s'), bDirect = pb('Mode direct'), bNext = null;
     if (o.type === 'tv') bNext = pb('Épisode suivant');
     bot.appendChild(btns); root.appendChild(bot);
 
@@ -286,6 +286,7 @@
     bM.act = function () { if (!P.cues) { CT.toast('Charge d’abord des sous-titres', 2000); return; } offset(-0.5); };
     bP.act = function () { if (!P.cues) { CT.toast('Charge d’abord des sous-titres', 2000); return; } offset(0.5); };
     bSub.act = function () { openSubs(P, root); };
+    bDirect.act = function () { stD.act(); };
     if (bNext) bNext.act = function () { o.e = o.e + 1; P.cues = null; P.subText = ''; subs.innerHTML = ''; P.cur = 0; P.dur = 0; updTop(); startLoading(0); P.resetTimer(); };
 
     CT.push(scr);

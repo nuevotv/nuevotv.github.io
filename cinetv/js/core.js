@@ -275,13 +275,35 @@
   };
   W.addEventListener('resize', function () { CT.fit(); }, false);
 
+  /* Confirmation avant de quitter */
+  CT.confirmExit = function () {
+    var m = el('div', 'phone quit');
+    m.style.cssText = 'left:560px;top:340px;width:800px;height:360px;text-align:center';
+    var t = el('div', 'ph-title', 'Quitter CineTV ?'); t.style.cssText = 'margin-top:70px;font-size:50px;font-weight:700';
+    m.appendChild(t);
+    var row = el('div', 'krow'); row.style.cssText = 'margin-top:70px;text-align:center';
+    var yes = el('div', 'btn f', 'Quitter'), no = el('div', 'btn f', 'Rester');
+    row.appendChild(yes); row.appendChild(no); m.appendChild(row);
+    D.getElementById('app').appendChild(m);
+    var prev = focused;
+    function shut() {
+      if (m.parentNode) m.parentNode.removeChild(m);
+      CT.setPanel(null); CT.onPanelBack = null; CT.panelOpen = false;
+      var tt = top(); setFocus(prev && prev.offsetWidth > 0 ? prev : (tt ? CT.firstFocus(tt.el) : null));
+    }
+    yes.act = function () { shut(); exitApp(); };
+    no.act = shut;
+    CT.setPanel(m); CT.panelOpen = true; CT.onPanelBack = shut;
+    setFocus(no);
+  };
+
   CT.back = function () {
     if (panelEl && CT.onPanelBack) { CT.onPanelBack(); return; }
     var t = top();
     if (t && t.onBack && t.onBack()) return;
     if (CT.pop()) return;
     if (t && t.tab && t.tab !== 'home') { CT.goTab('home'); return; }
-    exitApp();
+    CT.confirmExit();
   };
 
   function onKey(ev) {
