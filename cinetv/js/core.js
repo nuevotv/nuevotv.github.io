@@ -255,7 +255,7 @@
 
   /* Mise à l'échelle : l'interface est dessinée en 1920x1080 ; sur Android (WebView en 960x540 ou autre) on adapte. */
   CT.fit = function () {
-    var w = W.innerWidth || 1920, h = W.innerHeight || 1080, s = Math.min(w / 1920, h / 1080);
+    var w = D.documentElement.clientWidth || W.innerWidth || 1920, h = D.documentElement.clientHeight || W.innerHeight || 1080, s = Math.min(w / 1920, h / 1080);
     var app = D.getElementById('app'), st = D.documentElement.style, bs = D.body.style;
     if (!app) return;
     if (Math.abs(s - 1) < 0.01) { app.style.webkitTransform = app.style.transform = ''; return; }
@@ -296,7 +296,7 @@
       var keys = ['MediaPlay', 'MediaPause', 'MediaPlayPause', 'MediaStop', 'MediaFastForward', 'MediaRewind'];
       each(keys, function (k) { try { W.tizen.tvinputdevice.registerKey(k); } catch (e) { } });
     } catch (e) { }
-    CT.fit();
+    CT.fit(); setTimeout(CT.fit, 400); setTimeout(CT.fit, 1500);
     buildNav();
     D.addEventListener('keydown', onKey, false);
     CT.log('CineTV ' + CT.version + ' démarré'); CT.log('UA ' + navigator.userAgent);
