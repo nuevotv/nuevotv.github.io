@@ -452,6 +452,9 @@
         ['Diagnostic', '', diag],
         ['Version', CT.version, function () { }]
       ];
+      if (window.CineTVApp && window.CineTVApp.update) {
+        rows.splice(rows.length - 1, 0, ['Mettre à jour l\'appli Android', 'v' + (window.CineTVApp.version ? window.CineTVApp.version() : ''), function () { window.CineTVApp.update(); }]);
+      }
       var focusEl = null;
       each(rows, function (r, i) {
         var d = el('div', 'srow f', r[0]); d._idx = i + 1;
