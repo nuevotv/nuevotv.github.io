@@ -256,8 +256,41 @@
   /* Clavier natif Android / Fire TV (si l'appli est dans la coque Android) */
   CT.hasNative = function () { return !!(W.CineTVApp && W.CineTVApp.prompt); };
   CT.nativeText = function (title, value, cb) {
-    CT._np = cb;
-    try { W.CineTVApp.prompt(String(title || ''), String(value || '')); } catch (e) { CT._np = null; }
+    var A = W.CineTVApp;
+    if (!A.showKeyboard) { CT._np = cb; try { A.prompt(String(title || ''), String(value || '')); } catch (e) { CT._np = null; } return; }
+    /* Vrai champ de saisie dans la page : le clavier de la TV s'ouvre directement, sans fenêtre Android intermédiaire */
+    var m = el('div', 'phone quit');
+    m.style.cssText = 'left:360px;top:300px;width:1200px;height:420px';
+    var t = el('div', 'ph-title', title); t.style.cssText = 'margin:50px 0 0 60px;font-size:44px;font-weight:700';
+    m.appendChild(t);
+    var inp = D.createElement('input'); inp.type = 'text'; inp.value = value || '';
+    inp.setAttribute('autocomplete', 'off'); inp.setAttribute('autocapitalize', 'off'); inp.setAttribute('autocorrect', 'off'); inp.setAttribute('spellcheck', 'false');
+    inp.style.cssText = 'display:block;margin:30px 60px 0 60px;width:1080px;height:90px;font-size:40px;padding:0 24px;border:0;border-radius:16px;background:#fff;color:#0B0D12;box-sizing:border-box';
+    m.appendChild(inp);
+    var row = el('div', 'krow'); row.style.cssText = 'margin:40px 0 0 60px';
+    var ok = el('div', 'btn f', 'OK'), no = el('div', 'btn f', 'Annuler');
+    row.appendChild(ok); row.appendChild(no); m.appendChild(row);
+    D.getElementById('app').appendChild(m);
+    var prev = focused, closed = false;
+    function shut(send) {
+      if (closed) return; closed = true;
+      try { inp.blur(); A.hideKeyboard(); } catch (e) { }
+      if (m.parentNode) m.parentNode.removeChild(m);
+      CT.setPanel(null); CT.onPanelBack = null; CT.onPanelKey = null; CT.panelOpen = false;
+      var tt = top(); setFocus(prev && prev.offsetWidth > 0 ? prev : (tt ? CT.firstFocus(tt.el) : null));
+      if (send) cb(inp.value);
+    }
+    ok.act = function () { shut(true); };
+    no.act = function () { shut(false); };
+    CT.setPanel(m); CT.panelOpen = true; CT.onPanelBack = function () { shut(false); };
+    CT.onPanelKey = function (k) {
+      if (!closed && (k === 13 || k === 66 || k === 160)) { shut(true); return true; }
+      if (!closed && (k === 37 || k === 39) && D.activeElement === inp) return true; /* flèches gauche/droite = curseur */
+      return false;
+    };
+    setFocus(ok);
+    inp.focus();
+    try { inp.setSelectionRange(inp.value.length, inp.value.length); A.showKeyboard(); } catch (e) { }
   };
   CT._npDone = function (txt) { var cb = CT._np; CT._np = null; if (cb && txt !== null && txt !== undefined) cb(String(txt)); };
 
