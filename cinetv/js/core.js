@@ -266,7 +266,8 @@
     var w = D.documentElement.clientWidth || W.innerWidth || 1920, h = D.documentElement.clientHeight || W.innerHeight || 1080, s = Math.min(w / 1920, h / 1080);
     var app = D.getElementById('app'), st = D.documentElement.style, bs = D.body.style;
     if (!app) return;
-    if (Math.abs(s - 1) < 0.01) { app.style.webkitTransform = app.style.transform = ''; return; }
+    CT.scaled = Math.abs(s - 1) >= 0.01;
+    if (!CT.scaled) { app.style.webkitTransform = app.style.transform = ''; return; }
     st.width = bs.width = w + 'px'; st.height = bs.height = h + 'px';
     var ox = Math.round((w - 1920 * s) / 2), oy = Math.round((h - 1080 * s) / 2);
     app.style.webkitTransformOrigin = app.style.transformOrigin = '0 0';

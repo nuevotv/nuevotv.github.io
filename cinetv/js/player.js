@@ -118,10 +118,17 @@
 
   CT.play = function (o) {
     var P = { o: o, cur: o.t || 0, curAt: Date.now(), dur: 0, paused: false, started: false, cues: null, subOffset: 0, subText: '', subName: '', lastSave: 0, overlayOn: false, errorShown: false };
-    var root = el('div', 'screen player');
+    var root = el('div', 'screen player'), $app;
     var frame = D.createElement('iframe');
     frame.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
-    root.appendChild(frame);
+    /* Écran mis à l'échelle (Android) : la vidéo reste hors de la zone transformée, sinon l'image peut rester noire */
+    var outer = !!CT.scaled;
+    if (outer) {
+      root.className += ' clear';
+      frame.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;border:0;background:#000;z-index:1';
+      D.body.appendChild(frame);
+      $app = D.getElementById('app'); if ($app) { $app.style.zIndex = 2; }
+    } else root.appendChild(frame);
     var subs = el('div'); subs.id = 'subs'; root.appendChild(subs);
 
     var topB = el('div', 'p-top');
@@ -263,6 +270,7 @@
       save();
       clearInterval(P.tick); clearTimeout(P.hideT); clearTimeout(P.loadT);
       try { frame.src = 'about:blank'; } catch (e) { }
+      if (outer && frame.parentNode) frame.parentNode.removeChild(frame);
       CT.setPanel(null); CT.panelOpen = false; CT.onPanelBack = null;
       if (cur === P) cur = null;
     };
