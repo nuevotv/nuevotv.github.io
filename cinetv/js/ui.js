@@ -187,7 +187,12 @@
     var q = '', timer = null, reqId = 0;
     function upd() { fieldHtml(field, q, 'Titre, ID TMDB ou IMDb (tt…)'); }
     function change() { upd(); clearTimeout(timer); timer = setTimeout(run, 500); }
-    left.appendChild(makeKeyboard({
+    if (CT.hasNative()) {
+      field.className = 's-field f';
+      field.setAttribute('data-top', '1');
+      field.act = function () { CT.nativeText('Rechercher', q, function (v) { q = v.slice(0, 80); change(); }); };
+      left.appendChild(el('div', 's-hint', 'Appuie sur OK pour ouvrir le clavier de ta Fire TV / Android TV'));
+    } else left.appendChild(makeKeyboard({
       onChar: function (c) { if (q.length < 60) { q += c; change(); } },
       onBack: function () { q = q.slice(0, -1); change(); },
       onClear: function () { q = ''; change(); }
@@ -387,6 +392,7 @@
 
   /* ---------- réglages ---------- */
   function textEntry(o) {
+    if (CT.hasNative()) { CT.nativeText(o.title, o.value || '', function (v) { o.onOk(v); }); return; }
     var root = el('div', 'screen');
     var scr = { name: 'entry', el: root };
     var box = el('div', 'entry'), val = o.value || '';

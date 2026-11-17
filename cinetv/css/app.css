@@ -142,3 +142,7 @@ html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;backgrou
 .ph-small{font-size:24px;color:#A7ADBA;margin-top:26px}
 .ph-code{font-size:72px;font-weight:800;letter-spacing:10px;color:#FF5C4D;margin:6px 0 10px 0}
 .ph-status{font-size:28px;color:#C7CCD6;margin:12px 0 26px 0;min-height:36px}
+
+.s-field.f.focus{background:#fff;color:#0B0D12;box-shadow:0 0 0 5px #FF5C4D}
+.s-field.f.focus .ph{color:#6B7280}
+.s-hint{margin-top:14px;font-size:26px;color:#9CA3AF;white-space:normal;line-height:34px}

@@ -253,6 +253,14 @@
   }
   CT.exit = exitApp;
 
+  /* Clavier natif Android / Fire TV (si l'appli est dans la coque Android) */
+  CT.hasNative = function () { return !!(W.CineTVApp && W.CineTVApp.prompt); };
+  CT.nativeText = function (title, value, cb) {
+    CT._np = cb;
+    try { W.CineTVApp.prompt(String(title || ''), String(value || '')); } catch (e) { CT._np = null; }
+  };
+  CT._npDone = function (txt) { var cb = CT._np; CT._np = null; if (cb && txt !== null && txt !== undefined) cb(String(txt)); };
+
   /* Mise à l'échelle : l'interface est dessinée en 1920x1080 ; sur Android (WebView en 960x540 ou autre) on adapte. */
   CT.fit = function () {
     var w = D.documentElement.clientWidth || W.innerWidth || 1920, h = D.documentElement.clientHeight || W.innerHeight || 1080, s = Math.min(w / 1920, h / 1080);
